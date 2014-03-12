@@ -9,10 +9,11 @@ import java.lang.reflect.Modifier;
 public class Inspector {
 	private boolean go = true;
 	BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+	Object god;
 
 	public void inspect(Object object) {
 		try {
-
+			god = object;
 			printData(object);
 
 			while (go) {
@@ -30,12 +31,33 @@ public class Inspector {
 
 	}
 
-	private Object eval(String cmd) {
+	private Object eval(String cmd) throws IllegalArgumentException,
+			IllegalAccessException {
 		if (cmd.equalsIgnoreCase("exit") || cmd.equalsIgnoreCase("q")) {
 			go = false;
-		}
-		System.err.println(cmd);
+		} else if (cmd.startsWith("i ")) {
+			InspectCommand(cmd);
+		} else
+			System.err.println(cmd);
 		return cmd;
+	}
+
+	private void InspectCommand(String cmd) throws IllegalArgumentException,
+			IllegalAccessException {
+		String[] args = cmd.split(" ");
+
+		Class<?> godClass = god.getClass();
+
+		for (Field f : godClass.getDeclaredFields()) {
+			if (f.getName().equals(args[1])) {
+				f.setAccessible(true);
+				System.err.println(Modifier.toString(f.getModifiers()) + " "
+						+ f.getType().getCanonicalName() + " " + f.getName()
+						+ " = " + f.get(god).toString());
+				new ist.meic.pa.Inspector().inspect(f.get(god));
+			}
+		}
+
 	}
 
 	private void print(Object eval) {
@@ -75,7 +97,6 @@ public class Inspector {
 						+ f.getType().getCanonicalName() + " " + f.getName()
 						+ " = " + f.get(object).toString());
 			}
-
 
 		} else
 			System.err.println("----------");
