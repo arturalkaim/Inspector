@@ -32,29 +32,87 @@ public class Inspector {
 	}
 
 	private Object eval(String cmd) throws IllegalArgumentException,
-			IllegalAccessException {
+			IllegalAccessException, InstantiationException {
 		if (cmd.equalsIgnoreCase("exit") || cmd.equalsIgnoreCase("q")) {
 			go = false;
 		} else if (cmd.startsWith("i ")) {
 			InspectCommand(cmd);
+		} else if (cmd.startsWith("m ")) {
+			ModifieCommand(cmd);
 		} else
 			System.err.println(cmd);
 		return cmd;
 	}
 
-	private void InspectCommand(String cmd) throws IllegalArgumentException,
+	private void ModifieCommand(String cmd) throws IllegalArgumentException,
 			IllegalAccessException {
 		String[] args = cmd.split(" ");
-
+		if (args.length != 3) {
+			System.err
+					.println("The use of this command is:  m <name> <value> ");
+		}
 		Class<?> godClass = god.getClass();
 
 		for (Field f : godClass.getDeclaredFields()) {
 			if (f.getName().equals(args[1])) {
 				f.setAccessible(true);
-				System.err.println(Modifier.toString(f.getModifiers()) + " "
-						+ f.getType().getCanonicalName() + " " + f.getName()
-						+ " = " + f.get(god).toString());
+				
+				setVar(f, args[2]);
+				
+				if (f.getModifiers() != 0)
+					System.err.println(Modifier.toString(f.getModifiers())
+							+ " " + f.getType().getCanonicalName() + " "
+							+ f.getName() + " = " + f.get(god).toString());
+				else
+					System.err.println(f.getType().getCanonicalName() + " "
+							+ f.getName() + " = " + f.get(god).toString());
+			}
+		}
+	}
+
+	private void setVar(Field f, String str) throws IllegalArgumentException,
+			IllegalAccessException {
+		System.err.println(f.getType().getSimpleName());
+
+		if (f.getType().getSimpleName().equals("int")
+				|| f.getType().getSimpleName().equals("Integer")) {
+			f.setInt(god, Integer.parseInt(str));
+		} else if (f.getType().getSimpleName().equalsIgnoreCase("Float")) {
+			f.setFloat(god, Float.parseFloat(str));
+		} else if (f.getType().getSimpleName().equalsIgnoreCase("Boolean")) {
+			f.setBoolean(god, Boolean.parseBoolean(str));
+		} else if (f.getType().getSimpleName().equalsIgnoreCase("Double")) {
+			f.setDouble(god, Double.parseDouble(str));
+		} else if (f.getType().getSimpleName().equals("String")) {
+			f.set(god, str);
+		} else if (f.getType().getSimpleName().equalsIgnoreCase("Long")) {
+			f.setLong(god, Long.parseLong(str));
+		} else
+			System.err
+					.println("Type of input nos suported to modifie variable");
+
+	}
+
+	private void InspectCommand(String cmd) throws IllegalArgumentException,
+			IllegalAccessException, InstantiationException {
+		String[] args = cmd.split(" ");
+		if (args.length != 2) {
+			System.err.println("The use of this command is:  i <name>");
+		}
+		Class<?> godClass = god.getClass();
+
+		for (Field f : godClass.getDeclaredFields()) {
+			if (f.getName().equals(args[1])) {
+				f.setAccessible(true);
+				if (f.getModifiers() != 0)
+					System.err.println(Modifier.toString(f.getModifiers())
+							+ " " + f.getType().getCanonicalName() + " "
+							+ f.getName() + " = " + f.get(god).toString());
+				else
+					System.err.println(f.getType().getCanonicalName() + " "
+							+ f.getName() + " = " + f.get(god).toString());
 				new ist.meic.pa.Inspector().inspect(f.get(god));
+				printData(god);
 			}
 		}
 
@@ -93,9 +151,13 @@ public class Inspector {
 
 			for (Field f : sup.getDeclaredFields()) {
 				f.setAccessible(true);
-				System.err.println(Modifier.toString(f.getModifiers()) + " "
-						+ f.getType().getCanonicalName() + " " + f.getName()
-						+ " = " + f.get(object).toString());
+				if (f.getModifiers() != 0)
+					System.err.println(Modifier.toString(f.getModifiers())
+							+ " " + f.getType().getCanonicalName() + " "
+							+ f.getName() + " = " + f.get(god).toString());
+				else
+					System.err.println(f.getType().getCanonicalName() + " "
+							+ f.getName() + " = " + f.get(god).toString());
 			}
 
 		} else
@@ -103,9 +165,13 @@ public class Inspector {
 
 		for (Field f : cl.getDeclaredFields()) {
 			f.setAccessible(true);
-			System.err.println(Modifier.toString(f.getModifiers()) + " "
-					+ f.getType().getCanonicalName() + " " + f.getName()
-					+ " = " + f.get(object).toString());
+			if (f.getModifiers() != 0)
+				System.err.println(Modifier.toString(f.getModifiers())
+						+ " " + f.getType().getCanonicalName() + " "
+						+ f.getName() + " = " + f.get(god).toString());
+			else
+				System.err.println(f.getType().getCanonicalName() + " "
+						+ f.getName() + " = " + f.get(god).toString());
 		}
 	}
 }
