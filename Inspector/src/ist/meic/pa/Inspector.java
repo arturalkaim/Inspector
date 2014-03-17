@@ -9,6 +9,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 
+
+
 public class Inspector {
 	private boolean go = true;
 	BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
@@ -17,10 +19,10 @@ public class Inspector {
 	public void inspect(Object object) {
 		try {
 			god = object;
-			printData(object);
+			printData(object, true);
 
 			while (go) {
-				print(eval(read()));
+				eval(read());
 			}
 
 		} catch (IllegalArgumentException e) {
@@ -28,13 +30,10 @@ public class Inspector {
 		} catch (IllegalAccessException e) {
 			e.printStackTrace();
 		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (ReflectiveOperationException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (RuntimeException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -56,6 +55,15 @@ public class Inspector {
 		return cmd;
 	}
 
+	/**
+	 * Call function with the name in {@cmd}
+	 * @param cmd 
+	 * @throws SecurityException
+	 * @throws IllegalAccessException
+	 * @throws IllegalArgumentException
+	 * @throws InvocationTargetException
+	 * @throws NoSuchMethodException
+	 */
 	private void CallCommand(String cmd) throws SecurityException,
 			IllegalAccessException, IllegalArgumentException,
 			InvocationTargetException, NoSuchMethodException {
@@ -88,6 +96,7 @@ public class Inspector {
 
 			m.setAccessible(true);
 			m.invoke(god);
+
 		} else if (args.length > 2) {
 			Class<Integer>[] arg = new Class[args.length - 2];
 			Arrays.fill(arg, Integer.TYPE);
@@ -105,7 +114,7 @@ public class Inspector {
 	}
 
 	private void ModifieCommand(String cmd) throws IllegalArgumentException,
-			IllegalAccessException {
+			IllegalAccessException, ReflectiveOperationException {
 		String[] args = cmd.split(" ");
 		if (args.length != 3) {
 			System.err
@@ -113,45 +122,34 @@ public class Inspector {
 		}
 		Class<?> godClass = god.getClass();
 
-		for (Field f : godClass.getSuperclass().getDeclaredFields()) {
-			if (f.getName().equals(args[1])) {
-				f.setAccessible(true);
+		Field f = findField(args[1], godClass);
 
-				setVar(f, args[2]);
+		setVar(f, args[2]);
 
-				if (f.getModifiers() != 0) {
-					System.err.println(Modifier.toString(f.getModifiers())
-							+ " " + f.getType().getCanonicalName() + " "
-							+ f.getName() + " = " + f.get(god).toString());
-					return;
-				} else {
-					System.err.println(f.getType().getCanonicalName() + " "
-							+ f.getName() + " = " + f.get(god).toString());
-					return;
-				}
-			}
-		}
-
-		for (Field f : godClass.getDeclaredFields()) {
-			if (f.getName().equals(args[1])) {
-				f.setAccessible(true);
-
-				setVar(f, args[2]);
-
-				if (f.getModifiers() != 0) {
-					System.err.println(Modifier.toString(f.getModifiers())
-							+ " " + f.getType().getCanonicalName() + " "
-							+ f.getName() + " = " + f.get(god).toString());
-					return;
-				} else {
-					System.err.println(f.getType().getCanonicalName() + " "
-							+ f.getName() + " = " + f.get(god).toString());
-					return;
-				}
-			}
-		}
+		printField(f);
 	}
 
+	private Field findField(String name, Class<?> godClass)
+			throws NoSuchFieldException {
+		if (!godClass.getSuperclass().getSimpleName().equals("Object"))
+			return findField(name, godClass.getSuperclass());
+
+		for (Field f : godClass.getSuperclass().getDeclaredFields()) {
+			if (f.getName().equals(name)) {
+				f.setAccessible(true);
+				return f;
+			}
+		}
+
+		throw new NoSuchFieldException("Field " + name + " not found!");
+	}
+
+	/**
+	 * @param f field that will be changed
+	 * @param str new value in a {@link String} form
+	 * @throws IllegalArgumentException
+	 * @throws IllegalAccessException
+	 */
 	private void setVar(Field f, String str) throws IllegalArgumentException,
 			IllegalAccessException {
 		System.err.println(f.getType().getSimpleName());
@@ -170,9 +168,7 @@ public class Inspector {
 		} else if (f.getType().getSimpleName().equalsIgnoreCase("Long")) {
 			f.setLong(god, Long.parseLong(str));
 		} else
-			System.err
-					.println("Type of input nos suported to modifie variable");
-
+			System.err.println("Type of input nos suported to modifie variable");
 	}
 
 	private void InspectCommand(String cmd) throws IllegalArgumentException,
@@ -186,21 +182,33 @@ public class Inspector {
 		for (Field f : godClass.getDeclaredFields()) {
 			if (f.getName().equals(args[1])) {
 				f.setAccessible(true);
-				if (f.getModifiers() != 0)
-					System.err.println(Modifier.toString(f.getModifiers())
-							+ " " + f.getType().getCanonicalName() + " "
-							+ f.getName() + " = " + f.get(god).toString());
-				else
-					System.err.println(f.getType().getCanonicalName() + " "
-							+ f.getName() + " = " + f.get(god).toString());
+				printField(f);
 				new ist.meic.pa.Inspector().inspect(f.get(god));
-				printData(god);
+				printData(god, true);
 			}
 		}
 
 	}
 
-	private void print(Object eval) {
+	private void printField(Field f) throws IllegalArgumentException,
+			IllegalAccessException {
+		f.setAccessible(true);
+		if (f.get(god) != null) {
+			if (f.getModifiers() != 0) {
+				System.err.println(Modifier.toString(f.getModifiers()) + " "
+						+ f.getType().getCanonicalName() + " " + f.getName()
+						+ " = " + f.get(god).toString());
+			} else {
+				System.err.println(f.getType().getCanonicalName() + " "
+						+ f.getName() + " = " + f.get(god).toString());
+			}
+		} else if (f.getModifiers() != 0) {
+			System.err.println(Modifier.toString(f.getModifiers()) + " "
+					+ f.getType().getCanonicalName() + " " + f.getName());
+		} else {
+			System.err.println(f.getType().getCanonicalName() + " "
+					+ f.getName());
+		}
 
 	}
 
@@ -208,52 +216,35 @@ public class Inspector {
 		String cmd = "";
 		System.err.print(">");
 		try {
-
 			cmd = in.readLine();
-
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			e.printStackTrace(); //XXX
 		}
 
 		return cmd;
 
 	}
 
-	private void printData(Object object) throws IllegalArgumentException,
-			IllegalAccessException, InstantiationException {
+	private void printData(Object object, Boolean printName)
+			throws IllegalArgumentException, IllegalAccessException,
+			InstantiationException {
 		Class<?> cl = object.getClass();
-		System.err.println(object.toString() + " is an instance of class "
-				+ cl.getCanonicalName());
+		if (printName)
+			System.err.println(object.toString() + " is an instance of class "
+					+ cl.getCanonicalName());
 		Class<?> sup = cl.getSuperclass();
 
 		if (!(sup.isInstance(new Object()))) {
-			System.err.println("extends " + sup);
-			System.err.println("----------");
-
-			for (Field f : sup.getDeclaredFields()) {
-				f.setAccessible(true);
-				if (f.getModifiers() != 0)
-					System.err.println(Modifier.toString(f.getModifiers())
-							+ " " + f.getType().getCanonicalName() + " "
-							+ f.getName() + " = " + f.get(god).toString());
-				else
-					System.err.println(f.getType().getCanonicalName() + " "
-							+ f.getName() + " = " + f.get(god).toString());
-			}
-
+			// System.err.println("extends " + sup);
+			printData(sup.newInstance(), false);
 		} else
 			System.err.println("----------");
 
 		for (Field f : cl.getDeclaredFields()) {
 			f.setAccessible(true);
-			if (f.getModifiers() != 0)
-				System.err.println(Modifier.toString(f.getModifiers()) + " "
-						+ f.getType().getCanonicalName() + " " + f.getName()
-						+ " = " + f.get(god).toString());
-			else
-				System.err.println(f.getType().getCanonicalName() + " "
-						+ f.getName() + " = " + f.get(god).toString());
+			printField(f);
 		}
+
 	}
+
 }
