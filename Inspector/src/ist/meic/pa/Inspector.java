@@ -14,11 +14,11 @@ import java.util.Arrays;
 public class Inspector {
 	private boolean go = true;
 	BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-	Object god;
+	Object theForce;
 
 	public void inspect(Object object) {
 		try {
-			god = object;
+			theForce = object;
 			printData(object, true);
 
 			while (go) {
@@ -72,14 +72,14 @@ public class Inspector {
 			System.err
 					.println("The use of this command is:  m <name> [<value> <value> <value> ...] ");
 		}
-		Class<?> godClass = god.getClass();
+		Class<?> theCForce = theForce.getClass();
 		try {
-			invokeMethod(godClass, args);
+			invokeMethod(theCForce, args);
 		} catch (NoSuchMethodException e) {
-			if (godClass.isInstance(Object.class)) {
+			if (theCForce.isInstance(Object.class)) {
 				throw e;
 			} else {
-				invokeMethod(godClass.getSuperclass(), args);
+				invokeMethod(theCForce.getSuperclass(), args);
 			}
 		}
 
@@ -95,7 +95,7 @@ public class Inspector {
 			m = godClass.getMethod(args[1]);
 
 			m.setAccessible(true);
-			m.invoke(god);
+			m.invoke(theForce);
 
 		} else if (args.length > 2) {
 			Class<Integer>[] arg = new Class[args.length - 2];
@@ -106,7 +106,7 @@ public class Inspector {
 			for (int i = 2; i < args.length; i++) {
 				params[i - 2] = Integer.parseInt(args[i]);
 			}
-			Object res = m.invoke(god, (Object[]) params);
+			Object res = m.invoke(theForce, (Object[]) params);
 			if (res != null) {
 				System.err.println(res.toString());
 			}
@@ -120,21 +120,21 @@ public class Inspector {
 			System.err
 					.println("The use of this command is:  m <name> <value> ");
 		}
-		Class<?> godClass = god.getClass();
+		Class<?> theCForce = theForce.getClass();
 
-		Field f = findField(args[1], godClass);
+		Field f = findField(args[1], theCForce);
 
 		setVar(f, args[2]);
 
 		printField(f);
 	}
 
-	private Field findField(String name, Class<?> godClass)
+	private Field findField(String name, Class<?> theCForce)
 			throws NoSuchFieldException {
-		if (!godClass.getSuperclass().getSimpleName().equals("Object"))
-			return findField(name, godClass.getSuperclass());
+		if (!theCForce.getSuperclass().getSimpleName().equals("Object"))
+			return findField(name, theCForce.getSuperclass());
 
-		for (Field f : godClass.getSuperclass().getDeclaredFields()) {
+		for (Field f : theCForce.getSuperclass().getDeclaredFields()) {
 			if (f.getName().equals(name)) {
 				f.setAccessible(true);
 				return f;
@@ -156,17 +156,17 @@ public class Inspector {
 
 		if (f.getType().getSimpleName().equals("int")
 				|| f.getType().getSimpleName().equals("Integer")) {
-			f.setInt(god, Integer.parseInt(str));
+			f.setInt(theForce, Integer.parseInt(str));
 		} else if (f.getType().getSimpleName().equalsIgnoreCase("Float")) {
-			f.setFloat(god, Float.parseFloat(str));
+			f.setFloat(theForce, Float.parseFloat(str));
 		} else if (f.getType().getSimpleName().equalsIgnoreCase("Boolean")) {
-			f.setBoolean(god, Boolean.parseBoolean(str));
+			f.setBoolean(theForce, Boolean.parseBoolean(str));
 		} else if (f.getType().getSimpleName().equalsIgnoreCase("Double")) {
-			f.setDouble(god, Double.parseDouble(str));
+			f.setDouble(theForce, Double.parseDouble(str));
 		} else if (f.getType().getSimpleName().equals("String")) {
-			f.set(god, str);
+			f.set(theForce, str);
 		} else if (f.getType().getSimpleName().equalsIgnoreCase("Long")) {
-			f.setLong(god, Long.parseLong(str));
+			f.setLong(theForce, Long.parseLong(str));
 		} else
 			System.err.println("Type of input nos suported to modifie variable");
 	}
@@ -177,14 +177,14 @@ public class Inspector {
 		if (args.length != 2) {
 			System.err.println("The use of this command is:  i <name>");
 		}
-		Class<?> godClass = god.getClass();
+		Class<?> theCForce = theForce.getClass();
 
-		for (Field f : godClass.getDeclaredFields()) {
+		for (Field f : theCForce.getDeclaredFields()) {
 			if (f.getName().equals(args[1])) {
 				f.setAccessible(true);
 				printField(f);
-				new ist.meic.pa.Inspector().inspect(f.get(god));
-				printData(god, true);
+				new ist.meic.pa.Inspector().inspect(f.get(theForce));
+				printData(theForce, true);
 			}
 		}
 
@@ -193,14 +193,14 @@ public class Inspector {
 	private void printField(Field f) throws IllegalArgumentException,
 			IllegalAccessException {
 		f.setAccessible(true);
-		if (f.get(god) != null) {
+		if (f.get(theForce) != null) {
 			if (f.getModifiers() != 0) {
 				System.err.println(Modifier.toString(f.getModifiers()) + " "
 						+ f.getType().getCanonicalName() + " " + f.getName()
-						+ " = " + f.get(god).toString());
+						+ " = " + f.get(theForce).toString());
 			} else {
 				System.err.println(f.getType().getCanonicalName() + " "
-						+ f.getName() + " = " + f.get(god).toString());
+						+ f.getName() + " = " + f.get(theForce).toString());
 			}
 		} else if (f.getModifiers() != 0) {
 			System.err.println(Modifier.toString(f.getModifiers()) + " "
