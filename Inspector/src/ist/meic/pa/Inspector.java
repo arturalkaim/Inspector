@@ -9,39 +9,59 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 
-
-
 public class Inspector {
 	private boolean go = true;
 	BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 	Object theForce;
 
 	public void inspect(Object object) {
+		theForce = object;
 		try {
-			theForce = object;
 			printData(object, true);
+		} catch (IllegalArgumentException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (IllegalAccessException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (InstantiationException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 
-			while (go) {
+		while (go) {
+			try {
+
 				eval(read());
+			} catch (NoSuchMethodException e) {
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InstantiationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (RuntimeException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (NoSuchFieldException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvocationTargetException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-		} catch (InstantiationException e) {
-			e.printStackTrace();
-		} catch (ReflectiveOperationException e) {
-			e.printStackTrace();
-		} catch (RuntimeException e) {
-			e.printStackTrace();
 		}
 
 	}
 
 	private Object eval(String cmd) throws IllegalArgumentException,
-			IllegalAccessException, InstantiationException,
-			ReflectiveOperationException, RuntimeException {
+			IllegalAccessException, InstantiationException, RuntimeException,
+			NoSuchFieldException, InvocationTargetException,
+			NoSuchMethodException {
 		if (cmd.equalsIgnoreCase("exit") || cmd.equalsIgnoreCase("q")) {
 			go = false;
 		} else if (cmd.startsWith("i ")) {
@@ -57,7 +77,8 @@ public class Inspector {
 
 	/**
 	 * Call function with the name in {@cmd}
-	 * @param cmd 
+	 * 
+	 * @param cmd
 	 * @throws SecurityException
 	 * @throws IllegalAccessException
 	 * @throws IllegalArgumentException
@@ -114,7 +135,8 @@ public class Inspector {
 	}
 
 	private void ModifieCommand(String cmd) throws IllegalArgumentException,
-			IllegalAccessException, ReflectiveOperationException {
+			IllegalAccessException, NoSuchFieldException,
+			InstantiationException {
 		String[] args = cmd.split(" ");
 		if (args.length != 3) {
 			System.err
@@ -126,13 +148,11 @@ public class Inspector {
 
 		setVar(f, args[2]);
 
-		printField(f);
+		printData(theForce, true);
 	}
 
 	private Field findField(String name, Class<?> theCForce)
 			throws NoSuchFieldException {
-		if (!theCForce.getSuperclass().getSimpleName().equals("Object"))
-			return findField(name, theCForce.getSuperclass());
 
 		for (Field f : theCForce.getSuperclass().getDeclaredFields()) {
 			if (f.getName().equals(name)) {
@@ -140,19 +160,22 @@ public class Inspector {
 				return f;
 			}
 		}
-
+		if (!theCForce.getSuperclass().getSimpleName().equals("Object"))
+			return findField(name, theCForce.getSuperclass());
 		throw new NoSuchFieldException("Field " + name + " not found!");
 	}
 
 	/**
-	 * @param f field that will be changed
-	 * @param str new value in a {@link String} form
+	 * @param f
+	 *            field that will be changed
+	 * @param str
+	 *            new value in a {@link String} form
 	 * @throws IllegalArgumentException
 	 * @throws IllegalAccessException
 	 */
 	private void setVar(Field f, String str) throws IllegalArgumentException,
 			IllegalAccessException {
-		System.err.println(f.getType().getSimpleName());
+		// System.err.println(f.getType().getSimpleName());
 
 		if (f.getType().getSimpleName().equals("int")
 				|| f.getType().getSimpleName().equals("Integer")) {
@@ -168,7 +191,8 @@ public class Inspector {
 		} else if (f.getType().getSimpleName().equalsIgnoreCase("Long")) {
 			f.setLong(theForce, Long.parseLong(str));
 		} else
-			System.err.println("Type of input nos suported to modifie variable");
+			System.err
+					.println("Type of input nos suported to modifie variable");
 	}
 
 	private void InspectCommand(String cmd) throws IllegalArgumentException,
@@ -182,9 +206,12 @@ public class Inspector {
 		for (Field f : theCForce.getDeclaredFields()) {
 			if (f.getName().equals(args[1])) {
 				f.setAccessible(true);
-				printField(f);
-				new ist.meic.pa.Inspector().inspect(f.get(theForce));
-				printData(theForce, true);
+				if (f.getType().isPrimitive()) {
+					printField(f);
+				} else {
+					inspect(f.get(theForce));
+					printData(theForce, true);
+				}
 			}
 		}
 
@@ -218,7 +245,7 @@ public class Inspector {
 		try {
 			cmd = in.readLine();
 		} catch (IOException e) {
-			e.printStackTrace(); //XXX
+			e.printStackTrace(); // XXX
 		}
 
 		return cmd;
@@ -234,8 +261,8 @@ public class Inspector {
 					+ cl.getCanonicalName());
 		Class<?> sup = cl.getSuperclass();
 
-		if (!(sup.isInstance(new Object()))) {
-			// System.err.println("extends " + sup);
+		if (!(sup.getName().equals("java.lang.Object"))) {
+			System.err.println("extends " + sup);
 			printData(sup.newInstance(), false);
 		} else
 			System.err.println("----------");
