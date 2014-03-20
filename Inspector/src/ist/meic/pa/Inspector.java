@@ -13,6 +13,7 @@ public class Inspector {
 	private boolean go = true;
 	BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 	Object theForce;
+	History _h = new History();
 
 	public void inspect(Object object) {
 		theForce = object;
@@ -41,38 +42,98 @@ public class Inspector {
 			} catch (IllegalAccessException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			} catch (InstantiationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			} catch (RuntimeException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (NoSuchFieldException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (InvocationTargetException e) {
 				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
 
 	}
 
-	private Object eval(String cmd) throws IllegalArgumentException,
-			IllegalAccessException, InstantiationException, RuntimeException,
-			NoSuchFieldException, InvocationTargetException,
-			NoSuchMethodException {
+	private Object eval(String cmd) throws NoSuchMethodException,
+			SecurityException, IllegalAccessException,
+			IllegalArgumentException, InvocationTargetException {
 		if (cmd.equalsIgnoreCase("exit") || cmd.equalsIgnoreCase("q")) {
 			go = false;
-		} else if (cmd.startsWith("i ")) {
-			InspectCommand(cmd);
-		} else if (cmd.startsWith("m ")) {
-			ModifieCommand(cmd);
-		} else if (cmd.startsWith("c ")) {
-			CallCommand(cmd);
-		} else
-			System.err.println(cmd);
+		} else {
+			exCommand(cmd);
+		}
 		return cmd;
+	}
+
+	private void exCommand(String cmd) throws NoSuchMethodException,
+			SecurityException, IllegalAccessException,
+			IllegalArgumentException, InvocationTargetException {
+		String[] line = cmd.split(" ");
+
+		Class<?> cl = this.getClass();
+		String mName = line[0] + "Command"; // ex: "i d" command calls iCommand
+
+		Method m = cl.getDeclaredMethod(mName, new Class[] { String.class });
+		m.setAccessible(true);
+		m.invoke(this, new Object[] { cmd });
+	}
+
+	private void bCommand(String cmd) throws Exception {
+		eval(_h.back()); // Calls the last command
+	}
+
+	private void lbCommand(String cmd) throws IOException,
+			NoSuchMethodException, SecurityException, IllegalAccessException,
+			IllegalArgumentException, InvocationTargetException {
+		String[] args = cmd.split(" ");
+		String aux;
+		if (args.length > 2) {
+			System.err.println("This command get any args");
+			return;
+		}
+		int cout = 0;
+		for (String c : _h.getLast(Integer.parseInt(args[1]))) {
+			System.err.println("[" + cout + "] - " + c);
+			cout++;
+		}
+		System.err.print(">");
+		aux = in.readLine();
+		int backTo = Integer.parseInt(aux);
+		eval(_h.back(backTo));
+
+	}
+
+	private void lmCommand(String cmd) {
+		String[] args = cmd.split(" ");
+		if (args.length > 1) {
+			System.err.println("This command doesn't get any args");
+			return;
+		}
+
+		for (Method m : theForce.getClass().getDeclaredMethods()) {
+			System.err.println(m.toString());
+		}
+
+	}
+
+	private void hCommand(String cmd) {
+		System.err.println();
+		System.err.println("Inspector help");
+		System.err.println();
+		System.err.println("*********************************");
+		System.err.println();
+		System.err.println("h - to see this message");
+		System.err.println("i <name> 				: Inspect the field <name>");
+		System.err.println("m <name> <value> 		: Modifie the value of <name> with <value>");
+		System.err.println("c <name> <arg1> <argn>	: Call method <name> with <arg..> as arguments");
+		System.err.println("lm		 				: List methods of the inspected Object");
+		System.err.println("b 						: select object within an array. The array should have been obtained as the result of the previous command.");
+		System.err.println("lb <value>				: Go back to one command in the last <value> commands");
+		System.err.println("exit or q - to exit");
+		System.err.println();
+		System.err.println("*********************************");
+		System.err.println();
 	}
 
 	/**
@@ -85,13 +146,12 @@ public class Inspector {
 	 * @throws InvocationTargetException
 	 * @throws NoSuchMethodException
 	 */
-	private void CallCommand(String cmd) throws SecurityException,
-			IllegalAccessException, IllegalArgumentException,
-			InvocationTargetException, NoSuchMethodException {
+	private void cCommand(String cmd) throws Exception {
 		String[] args = cmd.split(" ");
 		if (args.length < 2) {
 			System.err
 					.println("The use of this command is:  m <name> [<value> <value> <value> ...] ");
+			return;
 		}
 		Class<?> theCForce = theForce.getClass();
 		try {
@@ -107,9 +167,7 @@ public class Inspector {
 	}
 
 	private void invokeMethod(Class<?> godClass, String[] args)
-			throws NoSuchMethodException, SecurityException,
-			IllegalAccessException, IllegalArgumentException,
-			InvocationTargetException {
+			throws Exception {
 		Method m;
 		if (args.length == 2) {
 
@@ -134,18 +192,18 @@ public class Inspector {
 		}
 	}
 
-	private void ModifieCommand(String cmd) throws IllegalArgumentException,
+	private void mCommand(String cmd) throws IllegalArgumentException,
 			IllegalAccessException, NoSuchFieldException,
 			InstantiationException {
 		String[] args = cmd.split(" ");
 		if (args.length != 3) {
 			System.err
 					.println("The use of this command is:  m <name> <value> ");
+			return;
 		}
 		Class<?> theCForce = theForce.getClass();
 
 		Field f = findField(args[1], theCForce);
-
 		setVar(f, args[2]);
 
 		printData(theForce, true);
@@ -154,15 +212,16 @@ public class Inspector {
 	private Field findField(String name, Class<?> theCForce)
 			throws NoSuchFieldException {
 
-		for (Field f : theCForce.getSuperclass().getDeclaredFields()) {
+		for (Field f : theCForce.getDeclaredFields()) {
 			if (f.getName().equals(name)) {
 				f.setAccessible(true);
 				return f;
 			}
 		}
-		if (!theCForce.getSuperclass().getSimpleName().equals("Object"))
+		if (!theCForce.getSuperclass().getSimpleName().equals("Object")) {
 			return findField(name, theCForce.getSuperclass());
-		throw new NoSuchFieldException("Field " + name + " not found!");
+		}
+		throw new NoSuchFieldException("Field named: " + name + " not found!");
 	}
 
 	/**
@@ -195,24 +254,33 @@ public class Inspector {
 					.println("Type of input nos suported to modifie variable");
 	}
 
-	private void InspectCommand(String cmd) throws IllegalArgumentException,
-			IllegalAccessException, InstantiationException {
+	public static <T> T parseObjectFromString(String s, Class<T> clazz)
+			throws Exception {
+		return clazz.getConstructor(new Class[] { String.class })
+				.newInstance(s);
+	}
+
+	private void iCommand(String cmd) throws IllegalArgumentException,
+			IllegalAccessException, InstantiationException,
+			NoSuchFieldException {
 		String[] args = cmd.split(" ");
 		if (args.length != 2) {
 			System.err.println("The use of this command is:  i <name>");
+			return;
 		}
 		Class<?> theCForce = theForce.getClass();
+		Field f = findField(args[1], theCForce);
+		f.setAccessible(true);
 
-		for (Field f : theCForce.getDeclaredFields()) {
-			if (f.getName().equals(args[1])) {
-				f.setAccessible(true);
-				if (f.getType().isPrimitive()) {
-					printField(f);
-				} else {
-					inspect(f.get(theForce));
-					printData(theForce, true);
-				}
+		if (f.getType().isPrimitive()) {
+			printField(f);
+		} else {
+			if (f.get(theForce) != null) {
+				inspect(f.get(theForce));
+			} else {
+				printField(f);
 			}
+			// printData(theForce, true);
 		}
 
 	}
@@ -231,10 +299,11 @@ public class Inspector {
 			}
 		} else if (f.getModifiers() != 0) {
 			System.err.println(Modifier.toString(f.getModifiers()) + " "
-					+ f.getType().getCanonicalName() + " " + f.getName());
+					+ f.getType().getCanonicalName() + " " + f.getName()
+					+ " = null");
 		} else {
 			System.err.println(f.getType().getCanonicalName() + " "
-					+ f.getName());
+					+ f.getName() + " = null");
 		}
 
 	}
@@ -248,6 +317,7 @@ public class Inspector {
 			e.printStackTrace(); // XXX
 		}
 
+		_h.record(cmd);
 		return cmd;
 
 	}
