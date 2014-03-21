@@ -7,6 +7,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 
 public class Inspector {
@@ -79,10 +81,12 @@ public class Inspector {
 		m.invoke(this, new Object[] { cmd });
 	}
 
+	@SuppressWarnings("unused")
 	private void bCommand(String cmd) throws Exception {
 		eval(_h.back()); // Calls the last command
 	}
 
+	@SuppressWarnings("unused")
 	private void lbCommand(String cmd) throws IOException,
 			NoSuchMethodException, SecurityException, IllegalAccessException,
 			IllegalArgumentException, InvocationTargetException {
@@ -104,6 +108,7 @@ public class Inspector {
 
 	}
 
+	@SuppressWarnings("unused")
 	private void lmCommand(String cmd) {
 		String[] args = cmd.split(" ");
 		if (args.length > 1) {
@@ -117,6 +122,7 @@ public class Inspector {
 
 	}
 
+	@SuppressWarnings("unused")
 	private void hCommand(String cmd) {
 		System.err.println();
 		System.err.println("Inspector help");
@@ -125,11 +131,15 @@ public class Inspector {
 		System.err.println();
 		System.err.println("h - to see this message");
 		System.err.println("i <name> 				: Inspect the field <name>");
-		System.err.println("m <name> <value> 		: Modifie the value of <name> with <value>");
-		System.err.println("c <name> <arg1> <argn>	: Call method <name> with <arg..> as arguments");
+		System.err
+				.println("m <name> <value> 		: Modifie the value of <name> with <value>");
+		System.err
+				.println("c <name> <arg1> <argn>	: Call method <name> with <arg..> as arguments");
 		System.err.println("lm		 				: List methods of the inspected Object");
-		System.err.println("b 						: select object within an array. The array should have been obtained as the result of the previous command.");
-		System.err.println("lb <value>				: Go back to one command in the last <value> commands");
+		System.err
+				.println("b 						: select object within an array. The array should have been obtained as the result of the previous command.");
+		System.err
+				.println("lb <value>				: Go back to one command in the last <value> commands");
 		System.err.println("exit or q - to exit");
 		System.err.println();
 		System.err.println("*********************************");
@@ -146,6 +156,7 @@ public class Inspector {
 	 * @throws InvocationTargetException
 	 * @throws NoSuchMethodException
 	 */
+	@SuppressWarnings("unused")
 	private void cCommand(String cmd) throws Exception {
 		String[] args = cmd.split(" ");
 		if (args.length < 2) {
@@ -154,47 +165,74 @@ public class Inspector {
 			return;
 		}
 		Class<?> theCForce = theForce.getClass();
+		invokeMethod(theCForce, args);
+	}
+
+	private void invokeMethod(Class<?> theCForce, String[] args)
+			throws NoSuchMethodException, IllegalAccessException,
+			IllegalArgumentException, InvocationTargetException,
+			InstantiationException, SecurityException {
+		System.err.println("The force!");
 		try {
-			invokeMethod(theCForce, args);
+			Method m;
+			if (args.length == 2) {
+				m = theCForce.getMethod(args[1]);
+				m.setAccessible(true);
+				m.invoke(theForce);
+			} else if (args.length > 2) {
+				/**
+				 * @arg Array that contains the method parameter types
+				 */
+				Class<?>[] arg = new Class[args.length - 2];
+				m = findMethod(theCForce, args[1]);
+				buildMethodArray(arg, m);
+				
+				/**
+				 * @params Array that contains the parsed method parameters
+				 */
+				Object[] params = new Object[args.length - 2];
+				for (int i = 2; i < args.length; i++) {
+					params[i - 2] = parseFromStr(args[i], arg[i - 2]);
+				}
+
+				m.setAccessible(true);
+				Object res = m.invoke(theForce, (Object[]) params);
+				if (res != null) {
+					System.err.println(res);
+				}
+			}
 		} catch (NoSuchMethodException e) {
-			if (theCForce.isInstance(Object.class)) {
+			if (theCForce.getSuperclass().getName().equals("java.lang.Object")) {
 				throw e;
 			} else {
 				invokeMethod(theCForce.getSuperclass(), args);
 			}
 		}
-
 	}
 
-	private void invokeMethod(Class<?> godClass, String[] args)
-			throws Exception {
-		Method m;
-		if (args.length == 2) {
-
-			m = godClass.getMethod(args[1]);
-
-			m.setAccessible(true);
-			m.invoke(theForce);
-
-		} else if (args.length > 2) {
-			Class<Integer>[] arg = new Class[args.length - 2];
-			Arrays.fill(arg, Integer.TYPE);
-			m = godClass.getDeclaredMethod(args[1], arg);
-			m.setAccessible(true);
-			Integer[] params = new Integer[args.length - 2];
-			for (int i = 2; i < args.length; i++) {
-				params[i - 2] = Integer.parseInt(args[i]);
-			}
-			Object res = m.invoke(theForce, (Object[]) params);
-			if (res != null) {
-				System.err.println(res.toString());
-			}
+	private void buildMethodArray(Class<?>[] arg, Method m) {
+		int i = 0;
+		for (Class<?> t : m.getParameterTypes()) {
+			arg[i] = new TypeManager().box(t);
+			System.err.println(arg[i].getCanonicalName());
+			i++;
 		}
 	}
 
+	private Method findMethod(Class<?> theCForce, String name)
+			throws NoSuchMethodException {
+		for (Method m : theCForce.getDeclaredMethods()) {
+			if (m.getName().equals(name))
+				return m;
+		}
+		throw new NoSuchMethodException("Method named: " + name + " not found!");
+	}
+
+	@SuppressWarnings("unused")
 	private void mCommand(String cmd) throws IllegalArgumentException,
 			IllegalAccessException, NoSuchFieldException,
-			InstantiationException {
+			InstantiationException, InvocationTargetException,
+			NoSuchMethodException, SecurityException {
 		String[] args = cmd.split(" ");
 		if (args.length != 3) {
 			System.err
@@ -229,37 +267,29 @@ public class Inspector {
 	 *            field that will be changed
 	 * @param str
 	 *            new value in a {@link String} form
-	 * @throws IllegalArgumentException
+	 * @throws SecurityException
+	 * @throws NoSuchMethodException
+	 * @throws InvocationTargetException
+	 * @throws InstantiationException
 	 * @throws IllegalAccessException
+	 * @throws IllegalArgumentException
+	 * @throws Exception
 	 */
 	private void setVar(Field f, String str) throws IllegalArgumentException,
-			IllegalAccessException {
-		// System.err.println(f.getType().getSimpleName());
-
-		if (f.getType().getSimpleName().equals("int")
-				|| f.getType().getSimpleName().equals("Integer")) {
-			f.setInt(theForce, Integer.parseInt(str));
-		} else if (f.getType().getSimpleName().equalsIgnoreCase("Float")) {
-			f.setFloat(theForce, Float.parseFloat(str));
-		} else if (f.getType().getSimpleName().equalsIgnoreCase("Boolean")) {
-			f.setBoolean(theForce, Boolean.parseBoolean(str));
-		} else if (f.getType().getSimpleName().equalsIgnoreCase("Double")) {
-			f.setDouble(theForce, Double.parseDouble(str));
-		} else if (f.getType().getSimpleName().equals("String")) {
-			f.set(theForce, str);
-		} else if (f.getType().getSimpleName().equalsIgnoreCase("Long")) {
-			f.setLong(theForce, Long.parseLong(str));
-		} else
-			System.err
-					.println("Type of input nos suported to modifie variable");
+			IllegalAccessException, InstantiationException,
+			InvocationTargetException, NoSuchMethodException, SecurityException {
+		f.set(theForce, parseFromStr(str, f.get(theForce).getClass()));
 	}
 
-	public static <T> T parseObjectFromString(String s, Class<T> clazz)
-			throws Exception {
+	public <T> T parseFromStr(String s, Class<T> clazz)
+			throws InstantiationException, IllegalAccessException,
+			IllegalArgumentException, InvocationTargetException,
+			NoSuchMethodException, SecurityException {
 		return clazz.getConstructor(new Class[] { String.class })
 				.newInstance(s);
 	}
 
+	@SuppressWarnings("unused")
 	private void iCommand(String cmd) throws IllegalArgumentException,
 			IllegalAccessException, InstantiationException,
 			NoSuchFieldException {

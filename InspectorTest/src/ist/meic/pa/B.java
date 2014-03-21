@@ -5,7 +5,7 @@ public class B {
 	protected int d;
 	private G g;
 	
-	private int h(int a, int b, int c){
+	private String h(int a, String b, float c){
 		return a + b + c;
 	}
 }

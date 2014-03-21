@@ -34,7 +34,7 @@ public class History {
 			n=id;
 		String[] cmds = new String[n];
 
-		for (int i = id - n, j = id - n; i < id; i++) {
+		for (int i = id - n; i < id; i++) {
 			cmds[id-i-1] = _history.get(i);
 		}
 
