@@ -7,6 +7,11 @@ https://fenix.tecnico.ulisboa.pt/downloadFile/3779580627842/inspector.pdf
 
 In order to debug an application, it is useful to inspect its objects. An inspector describes the state of an object
 and can also support making changes in that state.
+The inspector must be started using the following form:
+<br>
+```java
+new ist.meic.pa.Inspector().inspect(object);
+```
 
 
 <ul>
