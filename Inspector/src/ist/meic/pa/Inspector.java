@@ -1,5 +1,7 @@
 package ist.meic.pa;
 
+import ist.meic.pa.exceptions.ObjectNotExistsException;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -19,6 +21,7 @@ public class Inspector {
 
 	public void inspect(Object object) {
 		theForce = object;
+		_h.recordObj(object);
 		try {
 			printData(object, true);
 		} catch (IllegalArgumentException e1) {
@@ -36,8 +39,12 @@ public class Inspector {
 			try {
 
 				eval(read());
+			} catch (ObjectNotExistsException e) {
+				System.err.println(e.getMessage());
 			} catch (NoSuchMethodException e) {
-				e.printStackTrace();
+				System.err.println(e.getMessage());
+			} catch (NoSuchFieldException e) {
+				System.err.println(e.getMessage());
 			} catch (IllegalArgumentException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -50,16 +57,15 @@ public class Inspector {
 			} catch (InvocationTargetException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			} catch (Exception e) {
+			} catch (Throwable e) {
 				e.printStackTrace();
+				go = false;
 			}
 		}
 
 	}
 
-	private Object eval(String cmd) throws NoSuchMethodException,
-			SecurityException, IllegalAccessException,
-			IllegalArgumentException, InvocationTargetException {
+	private Object eval(String cmd) throws Throwable {
 		if (cmd.equalsIgnoreCase("exit") || cmd.equalsIgnoreCase("q")) {
 			go = false;
 		} else {
@@ -68,28 +74,29 @@ public class Inspector {
 		return cmd;
 	}
 
-	private void exCommand(String cmd) throws NoSuchMethodException,
-			SecurityException, IllegalAccessException,
-			IllegalArgumentException, InvocationTargetException {
+	private void exCommand(String cmd) throws Throwable {
 		String[] line = cmd.split(" ");
 
 		Class<?> cl = this.getClass();
 		String mName = line[0] + "Command"; // ex: "i d" command calls iCommand
 
-		Method m = cl.getDeclaredMethod(mName, new Class[] { String.class });
-		m.setAccessible(true);
-		m.invoke(this, new Object[] { cmd });
+		try {
+			Method m = cl
+					.getDeclaredMethod(mName, new Class[] { String.class });
+			m.setAccessible(true);
+			m.invoke(this, new Object[] { cmd });
+		} catch (InvocationTargetException e) {
+			throw e.getCause();
+		}
 	}
 
 	@SuppressWarnings("unused")
-	private void bCommand(String cmd) throws Exception {
+	private void bCommand(String cmd) throws Throwable {
 		eval(_h.back()); // Calls the last command
 	}
 
 	@SuppressWarnings("unused")
-	private void lbCommand(String cmd) throws IOException,
-			NoSuchMethodException, SecurityException, IllegalAccessException,
-			IllegalArgumentException, InvocationTargetException {
+	private void lbCommand(String cmd) throws Throwable {
 		String[] args = cmd.split(" ");
 		String aux;
 		if (args.length > 2) {
@@ -101,10 +108,50 @@ public class Inspector {
 			System.err.println("[" + cout + "] - " + c);
 			cout++;
 		}
-		System.err.print(">");
+		System.err.print("Insert the id of the command to go back>");
 		aux = in.readLine();
 		int backTo = Integer.parseInt(aux);
 		eval(_h.back(backTo));
+
+	}
+
+	@SuppressWarnings("unused")
+	private void soCommand(String cmd) throws IOException,
+			NoSuchMethodException, SecurityException, IllegalAccessException,
+			IllegalArgumentException, InvocationTargetException {
+		String[] args = cmd.split(" ");
+		if (args.length != 2) {
+			System.err.println("This command gets one argument");
+			return;
+		}
+
+		_h.saveObject(theForce, args[1]);
+
+	}
+
+	@SuppressWarnings("unused")
+	private void boCommand(String cmd) throws Throwable {
+		String[] args = cmd.split(" ");
+		String aux;
+		if (args.length > 2) {
+			System.err.println("This command gets one argument");
+			return;
+		}
+		int cout = 0;
+		for (Object c : _h.getLastNObjects(10)) {
+			System.err.println("[" + cout + "] - " + c);
+			cout++;
+		}
+		System.err.print("insert the id of the object to inspect>");
+		aux = in.readLine();
+		int backTo = 0;
+		try {
+			backTo = Integer.parseInt(aux);
+		} catch (NumberFormatException e) {
+			return;
+		}
+
+		inspect(_h.getObject(backTo));
 
 	}
 
@@ -132,14 +179,17 @@ public class Inspector {
 		System.err.println("h - to see this message");
 		System.err.println("i <name> 				: Inspect the field <name>");
 		System.err
-				.println("m <name> <value> 		: Modifie the value of <name> with <value>");
+				.println("m <name> <value> 		: Modify the value of <name> with <value>");
 		System.err
 				.println("c <name> <arg1> <argn>	: Call method <name> with <arg..> as arguments");
 		System.err.println("lm		 				: List methods of the inspected Object");
-		System.err
-				.println("b 						: select object within an array. The array should have been obtained as the result of the previous command.");
+		System.err.println("b 						: Repete ");
 		System.err
 				.println("lb <value>				: Go back to one command in the last <value> commands");
+		System.err
+				.println("bo <value> 				: Go back in history of inspected Objects [default max: 10 objects]");
+		System.err
+				.println("so <name> 				: Save the current inspected Object with <name>");
 		System.err.println("exit or q - to exit");
 		System.err.println();
 		System.err.println("*********************************");
@@ -171,8 +221,7 @@ public class Inspector {
 	private void invokeMethod(Class<?> theCForce, String[] args)
 			throws NoSuchMethodException, IllegalAccessException,
 			IllegalArgumentException, InvocationTargetException,
-			InstantiationException, SecurityException {
-		System.err.println("The force!");
+			InstantiationException, SecurityException, ObjectNotExistsException {
 		try {
 			Method m;
 			if (args.length == 2) {
@@ -186,7 +235,7 @@ public class Inspector {
 				Class<?>[] arg = new Class[args.length - 2];
 				m = findMethod(theCForce, args[1]);
 				buildMethodArray(arg, m);
-				
+
 				/**
 				 * @params Array that contains the parsed method parameters
 				 */
@@ -200,10 +249,11 @@ public class Inspector {
 				if (res != null) {
 					System.err.println(res);
 				}
+				_h.saveObject(res, "res");
 			}
 		} catch (NoSuchMethodException e) {
 			if (theCForce.getSuperclass().getName().equals("java.lang.Object")) {
-				throw e;
+				throw new NoSuchMethodException("Method named: " + args[1] + " not found!");
 			} else {
 				invokeMethod(theCForce.getSuperclass(), args);
 			}
@@ -214,7 +264,6 @@ public class Inspector {
 		int i = 0;
 		for (Class<?> t : m.getParameterTypes()) {
 			arg[i] = new TypeManager().box(t);
-			System.err.println(arg[i].getCanonicalName());
 			i++;
 		}
 	}
@@ -232,7 +281,7 @@ public class Inspector {
 	private void mCommand(String cmd) throws IllegalArgumentException,
 			IllegalAccessException, NoSuchFieldException,
 			InstantiationException, InvocationTargetException,
-			NoSuchMethodException, SecurityException {
+			NoSuchMethodException, SecurityException, ObjectNotExistsException {
 		String[] args = cmd.split(" ");
 		if (args.length != 3) {
 			System.err
@@ -273,32 +322,42 @@ public class Inspector {
 	 * @throws InstantiationException
 	 * @throws IllegalAccessException
 	 * @throws IllegalArgumentException
+	 * @throws ObjectNotExistsException
 	 * @throws Exception
 	 */
 	private void setVar(Field f, String str) throws IllegalArgumentException,
 			IllegalAccessException, InstantiationException,
-			InvocationTargetException, NoSuchMethodException, SecurityException {
-		f.set(theForce, parseFromStr(str, f.get(theForce).getClass()));
+			InvocationTargetException, NoSuchMethodException,
+			SecurityException, ObjectNotExistsException {
+		if (f.getType().isPrimitive())
+			f.set(theForce, parseFromStr(str, f.get(theForce).getClass()));
+		else
+			f.set(theForce, parseFromStr(str, f.getClass()));
 	}
 
-	public <T> T parseFromStr(String s, Class<T> clazz)
+	@SuppressWarnings("unchecked")
+	private <T> T parseFromStr(String s, Class<T> clazz)
 			throws InstantiationException, IllegalAccessException,
 			IllegalArgumentException, InvocationTargetException,
-			NoSuchMethodException, SecurityException {
+			NoSuchMethodException, SecurityException, ObjectNotExistsException {
+		if (s.startsWith("@"))
+			return (T) _h.getSavedObject(s.substring(1));
 		return clazz.getConstructor(new Class[] { String.class })
 				.newInstance(s);
 	}
 
 	@SuppressWarnings("unused")
-	private void iCommand(String cmd) throws IllegalArgumentException,
-			IllegalAccessException, InstantiationException,
-			NoSuchFieldException {
+	private void iCommand(String cmd) throws Throwable {
 		String[] args = cmd.split(" ");
 		if (args.length != 2) {
 			System.err.println("The use of this command is:  i <name>");
 			return;
 		}
 		Class<?> theCForce = theForce.getClass();
+		if (args[1].startsWith("+")) {
+			theCForce = theCForce.getSuperclass();
+			args[1] = args[1].substring(1);
+		}
 		Field f = findField(args[1], theCForce);
 		f.setAccessible(true);
 
@@ -347,7 +406,7 @@ public class Inspector {
 			e.printStackTrace(); // XXX
 		}
 
-		_h.record(cmd);
+		_h.recordCmd(cmd);
 		return cmd;
 
 	}
