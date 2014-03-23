@@ -7,6 +7,11 @@ https://fenix.tecnico.ulisboa.pt/downloadFile/3779580627842/inspector.pdf
 
 In order to debug an application, it is useful to inspect its objects. An inspector describes the state of an object
 and can also support making changes in that state.
+The inspector must be started using the following form:
+<br>
+```java
+new ist.meic.pa.Inspector().inspect(object);
+```
 
 
 <ul>
@@ -18,3 +23,6 @@ becomes value. This command must support, at minimum, elds of type int.</li>
 <li><b>c name value 0 value 1 ...value n </b> Calls the method named name using the currently presented object
 as receiver and the provided values as arguments and inspects the returned value, if there is one.</li>
   </ul>
+
+Documentation:<br>
+https://docs.google.com/document/d/16zliy8b4IzN7HhyRWQ0UhQpO19Ad_I3oJKwCP7o2R8M/edit
