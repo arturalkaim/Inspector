@@ -42,6 +42,7 @@ public class Inspector {
 			} catch (ObjectNotExistsException e) {
 				System.err.println(e.getMessage());
 			} catch (NoSuchMethodException e) {
+				e.printStackTrace();
 				System.err.println(e.getMessage());
 			} catch (NoSuchFieldException e) {
 				System.err.println(e.getMessage());
@@ -94,19 +95,18 @@ public class Inspector {
 	private void rCommand(String cmd) throws Throwable {
 		eval(_h.back()); // Calls the last command
 	}
-	
+
 	@SuppressWarnings("unused")
 	private void bCommand(String cmd) throws Throwable {
-		inspect(_h.getObject(1)); // Calls the last command
+		inspect(_h.getObject(1)); // Inspects the last Inspected Object
 	}
-	
 
 	@SuppressWarnings("unused")
 	private void lbCommand(String cmd) throws Throwable {
 		String[] args = cmd.split(" ");
 		String aux;
 		if (args.length > 2) {
-			System.err.println("This command get any args");
+			System.err.println("This command gets one arg");
 			return;
 		}
 		int cout = 0;
@@ -242,14 +242,21 @@ public class Inspector {
 					System.err.println(res);
 					_h.saveObject(res, "res");
 				}
-				
+
 			} else if (args.length > 2) {
 				/**
 				 * @arg Array that contains the method parameter types
 				 */
 				Class<?>[] arg = new Class[args.length - 2];
 				m = findMethod(theCForce, args[1]);
-				buildMethodArray(arg, m);
+				int nParams = m.getTypeParameters().length;
+				if (nParams == args.length - 2) {
+					System.err.println("nParams: " + nParams);
+					buildMethodParamTypeArray(arg, m);
+				} else
+					throw new NoSuchMethodException("Method named " + args[1]
+							+ " with " + (args.length - 2)
+							+ " not found \nTrying to call " + m.toString()+"?");
 
 				/**
 				 * @params Array that contains the parsed method parameters
@@ -265,18 +272,22 @@ public class Inspector {
 					System.err.println(res);
 					_h.saveObject(res, "res");
 				}
-				
+
 			}
 		} catch (NoSuchMethodException e) {
 			if (theCForce.getSuperclass().getName().equals("java.lang.Object")) {
-				throw new NoSuchMethodException("Method named: " + args[1] + " not found!!");
+				if (e.getMessage().startsWith("Method named"))
+					throw e;
+				else
+					throw new NoSuchMethodException("Method named: " + args[1]
+							+ " not found!!");
 			} else {
 				invokeMethod(theCForce.getSuperclass(), args);
 			}
 		}
 	}
 
-	private void buildMethodArray(Class<?>[] arg, Method m) {
+	private void buildMethodParamTypeArray(Class<?>[] arg, Method m) {
 		int i = 0;
 		for (Class<?> t : m.getParameterTypes()) {
 			arg[i] = new TypeManager().box(t);
