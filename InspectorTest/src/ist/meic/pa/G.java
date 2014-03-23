@@ -9,7 +9,7 @@ public class G extends E {
 	G(){
 		this.i = 0;
 	}
-	void holla(){
+	void h(){
 		System.out.println("holla " +i);
 		i++;
 	}

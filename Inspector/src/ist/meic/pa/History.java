@@ -56,19 +56,20 @@ public class History {
 	public Object[] getLastNObjects(int i) {
 		if (i == 0)
 			i = 3;
-		if (i > id)
-			i = id - 1;
+		if (i > objID)
+			i = objID-1;
 		Object[] objs = new Object[i];
 
-		for (int i1 = id - i; i1 < id; i1++) {
-			objs[id - i1 - 1] = _ObjHistory.get(i1);
+		for (int i1 = 0; i1 < i; i1++) {
+			System.out.println(i + " " + i1);
+			objs[i1] = _ObjHistory.get(objID - i1 - 2);
 		}
 
 		return objs;
 	}
 
 	public Object getObject(int n) {
-		return _ObjHistory.get(id - n - 1);
+		return _ObjHistory.get(objID - (n+1) - 1);
 	}
 
 	public void saveObject(Object object, String string) {

@@ -91,9 +91,15 @@ public class Inspector {
 	}
 
 	@SuppressWarnings("unused")
-	private void bCommand(String cmd) throws Throwable {
+	private void rCommand(String cmd) throws Throwable {
 		eval(_h.back()); // Calls the last command
 	}
+	
+	@SuppressWarnings("unused")
+	private void bCommand(String cmd) throws Throwable {
+		inspect(_h.getObject(1)); // Calls the last command
+	}
+	
 
 	@SuppressWarnings("unused")
 	private void lbCommand(String cmd) throws Throwable {
@@ -215,6 +221,10 @@ public class Inspector {
 			return;
 		}
 		Class<?> theCForce = theForce.getClass();
+		while (args[1].startsWith("+")) {
+			theCForce = theCForce.getSuperclass();
+			args[1] = args[1].substring(1);
+		}
 		invokeMethod(theCForce, args);
 	}
 
@@ -225,9 +235,14 @@ public class Inspector {
 		try {
 			Method m;
 			if (args.length == 2) {
-				m = theCForce.getMethod(args[1]);
+				m = theCForce.getDeclaredMethod(args[1]);
 				m.setAccessible(true);
-				m.invoke(theForce);
+				Object res = m.invoke(theForce);
+				if (res != null) {
+					System.err.println(res);
+					_h.saveObject(res, "res");
+				}
+				
 			} else if (args.length > 2) {
 				/**
 				 * @arg Array that contains the method parameter types
@@ -248,12 +263,13 @@ public class Inspector {
 				Object res = m.invoke(theForce, (Object[]) params);
 				if (res != null) {
 					System.err.println(res);
+					_h.saveObject(res, "res");
 				}
-				_h.saveObject(res, "res");
+				
 			}
 		} catch (NoSuchMethodException e) {
 			if (theCForce.getSuperclass().getName().equals("java.lang.Object")) {
-				throw new NoSuchMethodException("Method named: " + args[1] + " not found!");
+				throw new NoSuchMethodException("Method named: " + args[1] + " not found!!");
 			} else {
 				invokeMethod(theCForce.getSuperclass(), args);
 			}
@@ -354,7 +370,7 @@ public class Inspector {
 			return;
 		}
 		Class<?> theCForce = theForce.getClass();
-		if (args[1].startsWith("+")) {
+		while (args[1].startsWith("+")) {
 			theCForce = theCForce.getSuperclass();
 			args[1] = args[1].substring(1);
 		}
