@@ -1,4 +1,4 @@
-<project name="PA-Project" default="main" basedir=".">
+<project name="inspector" default="main" basedir=".">
     <description>
 	Ant Build for PA Project
     </description>
@@ -8,7 +8,7 @@
    <property name="build.dir"   value="build"/>
     <property name="classes.dir" value="${build.dir}/classes"/>
     <property name="jar.dir"     value="${build.dir}/jar"/>
-
+	<property name="main-class"	 value="ist.meic.pa.Test"/>
     <target name="clean">
         <delete dir="${build.dir}"/>
     </target>
