@@ -117,7 +117,7 @@ public class InspectorGadgets {
 			IllegalAccessException, InvocationTargetException,
 			NoSuchMethodException, ObjectNotExistsException {
 		for (int i = 2; i < args.length; i++) {
-			params[i - 2] = parseFromStr(args[i], arg[i - 2]);
+			params[i - 2] = objectFromStr(args[i], arg[i - 2]);
 		}
 	}
 
@@ -160,13 +160,13 @@ public class InspectorGadgets {
 			InvocationTargetException, NoSuchMethodException,
 			SecurityException, ObjectNotExistsException {
 		if (f.getType().isPrimitive())
-			f.set(theForce, parseFromStr(str, f.get(theForce).getClass()));
+			f.set(theForce, objectFromStr(str, f.get(theForce).getClass()));
 		else
-			f.set(theForce, parseFromStr(str, f.getClass()));
+			f.set(theForce, objectFromStr(str, f.getClass()));
 	}
 
 	@SuppressWarnings("unchecked")
-	private <T> T parseFromStr(String s, Class<T> clazz)
+	private <T> T objectFromStr(String s, Class<T> clazz)
 			throws InstantiationException, IllegalAccessException,
 			IllegalArgumentException, InvocationTargetException,
 			NoSuchMethodException, SecurityException, ObjectNotExistsException {
