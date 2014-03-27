@@ -15,11 +15,11 @@ public class Inspector {
 	private Object theForce;
 	private History _h = new History();
 	private Search _s = new Search();
-
-	private InspectorGadgets _ig = new InspectorGadgets(_s, _h);
+	private InspectorGadgets _ig;
 
 	public void inspect(Object object) {
 		try {
+			_ig = new InspectorGadgets(_s, _h, object);
 			theForce = object;
 			_h.recordObj(object);
 			_ig.printData(object, true);
@@ -32,6 +32,8 @@ public class Inspector {
 		} catch (NullPointerException npe) {
 			if (object == null) {
 				System.err.println("The inspect argument can NOT be null!");
+				System.out.println();
+				go = false;
 				return;
 			} else
 				npe.printStackTrace();
@@ -44,7 +46,6 @@ public class Inspector {
 			} catch (ObjectNotExistsException e) {
 				System.err.println(e.getMessage());
 			} catch (NoSuchMethodException e) {
-				e.printStackTrace();
 				System.err.println(e.getMessage());
 			} catch (NoSuchFieldException e) {
 				System.err.println(e.getMessage());
@@ -123,7 +124,10 @@ public class Inspector {
 
 		Class<?> cl = this.getClass();
 		String mName = line[0] + "Command"; // ex: "i d" command calls iCommand
-
+		if (line[0].length() > 2) {
+			throw new NoSuchMethodException("Method named: " + line[0]
+					+ " not found!!");
+		}
 		try {
 			Method m = cl
 					.getDeclaredMethod(mName, new Class[] { String.class });
@@ -131,6 +135,9 @@ public class Inspector {
 			m.invoke(this, new Object[] { cmd });
 		} catch (InvocationTargetException e) {
 			throw e.getCause();
+		} catch (NoSuchMethodException e) {
+			throw new NoSuchMethodException("Command named: " + line[0]
+					+ " not found!!");
 		}
 	}
 
@@ -141,7 +148,7 @@ public class Inspector {
 
 	@SuppressWarnings("unused")
 	private void bCommand(String cmd) throws Throwable {
-		inspect(_h.getObject(1)); // Inspects the last Inspected Object
+		inspect(_h.getObject(0)); // Inspects the last Inspected Object
 	}
 
 	@SuppressWarnings("unused")
@@ -279,15 +286,10 @@ public class Inspector {
 		Field f = _s.findField(args[1], theCForce);
 		f.setAccessible(true);
 
-		if (f.getType().isPrimitive()) {
+		if (f.getType().isPrimitive() || f.get(theForce) == null) {
 			_ig.printField(f);
 		} else {
-			if (f.get(theForce) != null) {
-				inspect(f.get(theForce));
-			} else {
-				_ig.printField(f);
-			}
-			// printData(theForce, true);
+			inspect(f.get(theForce));
 		}
 
 	}

@@ -15,9 +15,10 @@ public class InspectorGadgets {
 	private History _h;
 	private Object theForce;
 
-	public InspectorGadgets(Search _s, History _h) {
+	public InspectorGadgets(Search _s, History _h, Object object) {
 		this._s = _s;
 		this._h = _h;
+		this.theForce = object;
 	}
 
 	/**
