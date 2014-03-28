@@ -80,13 +80,11 @@ public class InspectorGadgets {
 		 */
 		Class<?>[] arg = new Class[args.length - 2];
 		m = _s.findMethod(theCForce, args[1], args.length - 2);
-		int nParams = m.getTypeParameters().length;
+		int nParams = m.getParameterTypes().length;
 		if (nParams == args.length - 2) {
-			System.err.println("nParams: " + nParams);
 			buildMethodParamTypeArray(arg, m);
 		} else
 			throw new NoSuchMethodException("Method named " + args[1]
-					+ " with " + (args.length - 2)
 					+ " not found \nTrying to call " + m.toString() + "?");
 
 		/**

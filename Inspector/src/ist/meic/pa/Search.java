@@ -19,13 +19,19 @@ public class Search {
 		}
 		throw new NoSuchFieldException("Field named: " + name + " not found!");
 	}
-	
+
 	public Method findMethod(Class<?> theCForce, String name, int nArgs)
 			throws NoSuchMethodException {
 		for (Method m : theCForce.getDeclaredMethods()) {
 			if (m.getName().equals(name)
-					&& m.getParameterTypes().length == nArgs)
+					&& m.getParameterTypes().length == nArgs) {
 				return m;
+			}
+			if (m.getName().equals(name)
+					&& m.getParameterTypes().length != nArgs) {
+				throw new NoSuchMethodException("Method named " + name
+						+ " not found \nTrying to call " + m.toString() + "?");
+			}
 		}
 		if (!theCForce.getCanonicalName().equals("java.lang.Object")) {
 			return findMethod(theCForce.getSuperclass(), name, nArgs);

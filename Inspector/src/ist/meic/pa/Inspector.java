@@ -53,16 +53,12 @@ public class Inspector {
 			} catch (NoSuchFieldException e) {
 				System.err.println(e.getMessage());
 			} catch (IllegalArgumentException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (IllegalAccessException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (RuntimeException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (InvocationTargetException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (Throwable e) {
 				e.printStackTrace();
@@ -128,8 +124,7 @@ public class Inspector {
 		Class<?> cl = this.getClass();
 		String mName = line[0] + "Command"; // ex: "i d" command calls iCommand
 		if (line[0].length() > 2) {
-			throw new NoSuchMethodException("Method named: " + line[0]
-					+ " not found!!");
+			throw new NoSuchCommandException(line[0]);
 		}
 		try {
 			Method m = cl
