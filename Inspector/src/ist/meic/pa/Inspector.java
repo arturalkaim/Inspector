@@ -48,6 +48,8 @@ public class Inspector {
 				System.err.println(e.getMessage());
 			} catch (NoSuchMethodException e) {
 				System.err.println(e.getMessage());
+			} catch (NoSuchCommandException e) {
+				System.err.println(e.getMessage());
 			} catch (NoSuchFieldException e) {
 				System.err.println(e.getMessage());
 			} catch (IllegalArgumentException e) {
