@@ -1,5 +1,6 @@
 package ist.meic.pa;
 
+import ist.meic.pa.exceptions.NoSuchCommandException;
 import ist.meic.pa.exceptions.ObjectNotExistsException;
 
 import java.io.BufferedReader;
@@ -136,8 +137,7 @@ public class Inspector {
 		} catch (InvocationTargetException e) {
 			throw e.getCause();
 		} catch (NoSuchMethodException e) {
-			throw new NoSuchMethodException("Command named: " + line[0]
-					+ " not found!!");
+			throw new NoSuchCommandException(line[0]);
 		}
 	}
 
