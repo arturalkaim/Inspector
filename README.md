@@ -1,7 +1,7 @@
 Inspector for Java
 ==========
 
-https://fenix.tecnico.ulisboa.pt/downloadFile/3779580627842/inspector.pdf
+https://github.com/arturalkaim/Inspector/blob/master/inspector.pdf
 
 In order to debug an application, it is useful to inspect its objects. An inspector describes the state of an object
 and can also support making changes in that state.
