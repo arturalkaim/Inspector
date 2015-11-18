@@ -32,7 +32,7 @@ as receiver and the provided values as arguments and inspects the returned value
 <li><b>b</b> - 	Reinspect the last inspected Object</li>
 <li><b>bo</b> - 	List the last <value> objects inspected and asks the user one to inspect. <value> is 10 by default.</li>
 <li><b>so</b> - 	Save the current inspected with the provided argument as name.</li>
-<br><br>
+<br>
 <li><b>lc</b> - 	List the last <value> commands used and asks the user one to repeat.</li>
 <li><b>r</b> - 	Repeat the last commands</li>
 </ul>
